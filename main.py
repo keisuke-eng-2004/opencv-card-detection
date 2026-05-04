@@ -1,44 +1,63 @@
 import cv2
 import numpy as np
+import os
 
-#画像ファイル読込み
 image = cv2.imread("cards.jpg")
 
 if image is None:
-    print("画像が見つかりません。cards.jpg をフォルダに入れてください。")
+    print("画像が見つかりません。cards.jpg を同じフォルダに入れてください。")
     exit()
 
-#サイズを調整
 image = cv2.resize(image, (800, 600))
 
-#グレースケール
 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-#ぼかし
 blur = cv2.GaussianBlur(gray, (5, 5), 0)
-
-#エッジ検出
 edges = cv2.Canny(blur, 50, 150)
 
-#輪郭検出
 contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-#ノイズを除外
-filtered_contours = []
+#出力フォルダ作成
+output_dir = "detected_cards"
+os.makedirs(output_dir, exist_ok=True)
+
+result = image.copy()
+card_count = 0
+
 for cnt in contours:
     area = cv2.contourArea(cnt)
-    if area > 1000:
-        filtered_contours.append(cnt)
 
-#輪郭を描画
-result = image.copy()
-cv2.drawContours(result, filtered_contours, -1, (0, 255, 0), 2)
+    #ノイズを除外
+    if area < 3000:
+        continue
 
-#結果
-cv2.imshow("Original", image)
-cv2.imshow("Gray", gray)
-cv2.imshow("Edges", edges)
+    #輪郭を四角形に近似
+    peri = cv2.arcLength(cnt, True)
+    approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
+
+    #四角形っぽいものだけカードとして扱う
+    if len(approx) == 4:
+        x, y, w, h = cv2.boundingRect(approx)
+
+        #細すぎる・小さすぎるものを除外
+        if w < 40 or h < 40:
+            continue
+
+        card_count += 1
+
+        #カード部分を切り抜き
+        card_img = image[y:y+h, x:x+w]
+
+        #保存
+        filename = f"{output_dir}/card_{card_count}.jpg"
+        cv2.imwrite(filename, card_img)
+
+        #元画像に枠と番号を描画
+        cv2.rectangle(result, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        cv2.putText(result, str(card_count), (x, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+
+print(f"{card_count}枚のカード画像を保存しました。")
+
 cv2.imshow("Result", result)
-
 cv2.waitKey(0)
 cv2.destroyAllWindows()
