@@ -2,10 +2,10 @@ import cv2
 import numpy as np
 
 #画像ファイル読込み
-image = cv2.imread("sample.jpg")
+image = cv2.imread("cards.jpg")
 
 if image is None:
-    print("画像が見つかりません。sample.jpg を同じフォルダに入れてください。")
+    print("画像が見つかりません。cards.jpg をフォルダに入れてください。")
     exit()
 
 #サイズを調整
