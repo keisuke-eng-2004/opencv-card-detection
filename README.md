@@ -1,4 +1,4 @@
-# pencv-card-detection
+# opencv-card-detection
 
 OpenCVを用いてトランプカードを自動検出・切り出しするプログラムです。
 
